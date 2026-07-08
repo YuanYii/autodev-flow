@@ -1,11 +1,11 @@
 # AutoDev Flow
 
-> **通用的自动化开发工作流**——把 SDLC 拆成 8 个阶段，纯 Markdown 指令交付，可被 Codex、Claude Code、Cursor 等任意 AI Agent 加载执行，自带闭环迭代与门控审计。
+> **通用的自动化开发工作流**——把 SDLC 拆成 7 个阶段，纯 Markdown 指令交付，可被 Codex、Claude Code、Cursor 等任意 AI Agent 加载执行，自带闭环迭代与门控审计。
 
 ## 核心优势
 
 - **通用兼容** — 纯 Markdown 指令，Codex / Claude / Cursor 执行逻辑完全一致，团队各用各的 Agent 也能流程统一。
-- **8 阶段全链路** — 项目检测 → 需求 → 开发 → 审查 → 审计 → 测试 → 门控 → 文档，前序产出即后序输入，缺一不可。
+- **7 阶段全链路** — 需求 → 开发 → 审查 → 审计 → 测试 → 门控 → 文档，前序产出即后序输入，缺一不可。
 - **闭环自动迭代** — Stage 6 把异常项自动回种为任务卡（`autopush-*`），下一轮 Stage 2 接手处理；不修复不放行。
 - **三层质量把关** — 静态审查（规范/性能/安全 17+ 检查项）→ 静态审计（四态判定）→ 运行验证（4 类验证），门控复核统一收口。
 - **完整审计链** — 任务卡 + 审计报告 + status.json 三类产物，Stage 7 渲染状态表到追踪文档，一份文档看完全部 Stage。
@@ -41,8 +41,8 @@ cp -r autodev-flow ~/.claude/skills/autodev-flow
 mkdir -p autodev/skills
 cp -r autodev-flow autodev/skills/autodev-flow
 
-# 2. 编辑项目配置（或让 Stage 0 自动生成）
-vim autodev/skills/autodev-flow/config.json
+# 2. 编辑项目配置
+vim autodev/skills/autodev-flow/template/config.template.json
 
 # 3. 在对话中告诉 Agent 工作流指令的位置即可触发
 #    "读取 autodev/skills/autodev-flow/SKILL.md，执行完整工作流"
@@ -50,39 +50,95 @@ vim autodev/skills/autodev-flow/config.json
 
 > 这种方式把工作流指令随项目一起版本管理，团队成员 clone 仓库后即可使用，无需各自安装。
 
-**使用**（所有 Agent 通用，对话中直接输入）：
+## 使用说明
 
-```bash
-"使用 autodev-flow，检测项目架构"          # 首次：生成 config.json
-"使用 autodev-flow，执行 Stage 1，帮我开发一个贪吃蛇游戏，要求使用html+js" # 需求分析
-"使用 autodev-flow，执行 Stage 1，需求1:....;需求2:....;需求3:...." # 多轮需求分析
-"使用 autodev-flow，执行 Stage 1，更新需求 20260601-DEV-001：.......。" # 需求更新
-"使用 autodev-flow，执行 Stage 2-7"      # 从开发到文档同步（Stage 0/1 已完成时）
+### 典型工作流程
+
+```
+Stage 1 需求拟定 → Stage 2 开发 → Stage 3 审查 → Stage 4 审计 → Stage 5 测试 → Stage 6 门控 → Stage 7 文档
 ```
 
-**查看状态**：
+### 阶段触发方式
+
+**单阶段执行**：
 
 ```bash
-# 统一命令（Stage 0 自动拷贝到 autodev/status.sh）
+# 需求分析（将用户需求拆解为结构化任务卡）
+"使用 autodev-flow，执行 Stage 1，帮我开发一个贪吃蛇游戏，要求使用html+js"
+
+# 需求分析（多条需求）
+"使用 autodev-flow，执行 Stage 1，需求1:新增用户注册;需求2:优化登录流程"
+
+# 更新已有需求
+"使用 autodev-flow，执行 Stage 1，更新需求 20260601-DEV-001：增加手机号注册支持"
+```
+
+**批量执行**：
+
+```bash
+# 从开发到文档同步（需求已确定时）
+"使用 autodev-flow，执行 Stage 2-7"
+
+# 完整工作流（从需求到文档）
+"使用 autodev-flow 执行完整工作流"
+```
+
+**指定任务执行**：
+
+```bash
+# 处理特定任务
+"使用 autodev-flow，处理 20260707-DEV-001"
+```
+
+### 各阶段说明
+
+| Stage | 触发场景 | 输入 | 输出 |
+|-------|---------|------|------|
+| 1 | 新增需求或更新需求 | 用户需求描述 | 结构化任务卡（BUG/OPT/DEV） |
+| 2 | 任务卡已就绪 | 任务文档 | 代码改动 + 处理报告 |
+| 3 | 代码已提交 | 任务文档 + 代码文件 | 审查报告（🔴/🟡/🟢） |
+| 4 | 审查报告已生成 | 任务文档 + 审查报告 | 验收报告（✅/⚠️/❌/🔍） |
+| 5 | 验收报告有 🔍 项 | 验收报告 | 集成测试报告（✅/❌） |
+| 6 | 所有报告已就绪 | 审查/验收/测试报告 | 修复卡 + 门控文件 |
+| 7 | 门控通过（BUG=0, DEV=0） | 任务文档 + 所有报告 | 文档更新 + 状态表 |
+
+### 查看状态
+
+```bash
+# macOS / Linux
 bash autodev/status.sh                    # 阶段状态面板（需 jq）
 bash autodev/status.sh --tasks            # 展示任务状态
 bash autodev/status.sh --watch            # 动态刷新（默认 10 秒）
-bash autodev/status.sh --watch 5          # 自定义刷新间隔
 bash autodev/status.sh --watch --tasks    # 刷新 + 任务状态
 
-# 方式 2：原始 JSON
-cat autodev/status.json
-
-# 方式 3：追踪文档（含 Stage 7 渲染的状态表）
-cat autodev/auto_iteration/$(date +%Y%m%d).md
-
-# 方式 4：审计报告
-ls autodev/auto_audit/$(date +%Y%m%d)/
+# Windows PowerShell
+powershell -ExecutionPolicy Bypass -File autodev\status.ps1
+powershell -ExecutionPolicy Bypass -File autodev\status.ps1 -Tasks
+powershell -ExecutionPolicy Bypass -File autodev\status.ps1 -Watch
+powershell -ExecutionPolicy Bypass -File autodev\status.ps1 -Watch -Tasks
+powershell -ExecutionPolicy Bypass -File autodev\status.ps1 -Watch -Interval 5
 ```
+
+### 常见问题
+
+**Q: 任务卡被覆盖了怎么办？**
+A: 工作流禁止覆盖任务文件，所有写入都是追加操作。如果发生覆盖，说明违反了防覆盖规则。
+
+**Q: Stage 7 为什么没有执行？**
+A: Stage 7 有门控检查，只有当 Stage 6 的 BUG=0 且 DEV=0 时才会执行。请检查 Stage 6 的门控文件。
+
+**Q: 任务卡编号规则是什么？**
+A: 格式为 `{RUN}-{TYPE}-{NNN}`，如 `20260707-DEV-001`。RUN 是日期，TYPE 是 BUG/OPT/DEV，NNN 是序号。
+
+**Q: autopush 卡片是什么？**
+A: Stage 6 门控复核时，会将审计发现的异常项自动回种为任务卡，编号前缀为 `autopush-`，下一轮 Stage 2 会接手处理。
+
+**Q: 如何回滚代码？**
+A: Stage 2 开发实现时，如果编译失败会立即回滚。任务状态标记为 🔴 未完成，并记录失败原因。
 
 ## 配置说明
 
-**优先使用 Stage 0 自动检测**：首次执行时运行 `"使用 autodev-flow，检测项目架构"`，Stage 0 会扫描项目目录自动生成 `config.json`。仅当自动检测结果不准确时，再手动补充以下字段：
+编辑 `template/config.template.json`，将 `{{占位符}}` 替换为实际值：
 
 | 分组 | 字段 | 说明 | 示例 |
 |------|------|------|------|
@@ -115,8 +171,6 @@ ls autodev/auto_audit/$(date +%Y%m%d)/
 ## 工作流概览
 
 ```
-Stage 0 项目检测 → config.json
-   ↓
 Stage 1 需求拟定 → 任务卡（BUG/OPT/DEV，含验证清单）
    ↓
 Stage 2 开发实现 → 代码改动 + 处理报告（编译验证）
@@ -134,7 +188,6 @@ Stage 7 文档同步 → README + 设计文档增量更新 + 工作流状态表
 
 | Stage | 角色 | 核心动作 | 指令文件 |
 |-------|------|----------|----------|
-| 0 | 项目检测 | 扫描技术栈/端口/模块，生成 config.json | `LLM-00-project-detect.md` |
 | 1 | 需求拟定 | 拆解+去重+编号，生成结构化任务卡 | `LLM-01-requirement-drafter.md` |
 | 2 | 开发实现 | BUG→OPT→DEV 顺序处理，编译必过 | `LLM-02-developer.md` |
 | 3 | 代码审查 | 规范/性能/安全三维度，🔴 回种 | `LLM-03-code-reviewer.md` |
@@ -149,7 +202,6 @@ Stage 7 文档同步 → README + 设计文档增量更新 + 工作流状态表
 
 | Stage | 产出文件 | 作用 |
 |-------|----------|------|
-| 0 | `autodev/config.json` | 项目配置（技术栈/端口/模块路径），后续 Stage 共享 |
 | 1 | `autodev/auto_iteration/{RUN}.md`（追加任务卡） | 结构化任务卡：编号、描述、验证清单、涉及文件 |
 | 2 | 代码改动 + 处理报告（追加到任务文档） | 实际代码修改 + 每个任务的处理结果与验证结论 |
 | 3 | `autodev/auto_audit/{RUN}/{RUN}-stage3.md` | 代码审查报告：🔴严重/🟡警告/🟢建议，含 文件:行号 |
@@ -164,7 +216,7 @@ Stage 7 文档同步 → README + 设计文档增量更新 + 工作流状态表
 |------|------|------|
 | **任务追踪文档** | `autodev/auto_iteration/{RUN}.md` | 当天全貌：任务卡 + 处理报告 + 工作流状态表，一份文档看完所有 Stage 结论 |
 | **审计报告** | `autodev/auto_audit/{RUN}/{RUN}-stage{3-6}.md` | Stage 3/4/5/6 各自独立报告，互不覆盖，可单独回溯 |
-| **状态文件** | `autodev/status.json` | 8 个 Stage 实时状态（success/failed/skipped），流水线唯一真相源 |
+| **状态文件** | `autodev/status.json` | 7 个 Stage 实时状态（success/failed/skipped），流水线唯一真相源 |
 
 > **设计要点**：所有产出均为 Markdown / JSON 纯文本，可被 Git 版本管理、可被 CI 管道读取、可被人工直接阅读。任务文件只追加不覆盖，历史记录完整保留。
 
@@ -172,16 +224,16 @@ Stage 7 文档同步 → README + 设计文档增量更新 + 工作流状态表
 
 ```
 autodev/
-├── config.json              # 项目配置（Stage 0 生成）
+├── config.json              # 项目配置
 ├── status.json              # 工作流状态（唯一真相源）
-├── status.sh                # 状态查看脚本（Stage 0 自动拷贝）
+├── status.sh                # 状态查看脚本
 ├── auto_iteration/{YYYYMMDD}.md   # 任务卡 + 处理报告 + 状态表
 ├── auto_audit/{YYYYMMDD}/
 │   ├── {YYYYMMDD}-stage3.md  # 代码审查
 │   ├── {YYYYMMDD}-stage4.md  # 测试审计
 │   ├── {YYYYMMDD}-stage5.md  # 集成测试
 │   └── {YYYYMMDD}-stage6.md  # 门控文件
-└── skills/autodev-flow/     # 本工作流指令（SKILL.md + config.json + references/）
+└── skills/autodev-flow/     # 本工作流指令（SKILL.md + references/ + scripts/）
 ```
 
 ## 关键规则

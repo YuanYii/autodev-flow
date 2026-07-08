@@ -104,4 +104,5 @@ exec_commands:
 post_actions:
   - mkdir -p autodev/{auto_iteration,auto_audit}
   - cp skills/autodev-flow/scripts/status.sh autodev/status.sh
+  - cp skills/autodev-flow/scripts/status.ps1 autodev/status.ps1
   - chmod +x autodev/status.sh

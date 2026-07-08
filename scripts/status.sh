@@ -7,6 +7,9 @@
 #   bash status.sh --tasks             # 展示任务状态
 #   bash status.sh --watch --tasks     # 动态刷新 + 任务状态
 
+# 强制使用北京时间（UTC+8）
+export TZ=Asia/Shanghai
+
 WATCH_MODE=false
 SHOW_TASKS=false
 REFRESH_INTERVAL=10
