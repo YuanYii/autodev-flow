@@ -66,7 +66,6 @@ status_icon() {
 # 阶段名称映射
 stage_name() {
   case "$1" in
-    Stage_0) echo "项目检测" ;;
     Stage_1) echo "需求拟定" ;;
     Stage_2) echo "代码实现" ;;
     Stage_3) echo "代码审查" ;;
@@ -74,7 +73,6 @@ stage_name() {
     Stage_5) echo "集成测试" ;;
     Stage_6) echo "门控复核" ;;
     Stage_7) echo "文档同步" ;;
-    Stage_8) echo "发布" ;;
     *)       echo "未知阶段" ;;
   esac
 }

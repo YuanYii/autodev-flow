@@ -67,7 +67,6 @@ function Get-StageName($stage) {
         "Stage_5" { return "集成测试" }
         "Stage_6" { return "门控复核" }
         "Stage_7" { return "文档同步" }
-        "Stage_8" { return "发布" }
         default   { return "未知阶段" }
     }
 }
