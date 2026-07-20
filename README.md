@@ -29,7 +29,7 @@
 
 ```bash
 # Codex
-npx @openai/codex skill install --repo 你的用户名/autodev-flow
+npx @openai/codex skill install --repo YuanYii/autodev-flow
 # Claude Code
 cp -r autodev-flow ~/.claude/skills/autodev-flow
 ```
